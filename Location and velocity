@@ -1,0 +1,81 @@
+%syms alpha delta gama theta phi; 
+%syms alphadot lamdadot gamadot phidot
+
+%const
+l0=0.315;
+l1=0.6;
+l2=0.403;
+l3=0.6;
+l4=0.3;
+l6=1.093;
+l7=2-l6;
+theta=1.107;   
+
+%range of alpha
+alpha=(94.1*pi()/180):+0.01:(287.21*pi()/180);
+
+%alphadot as a function of time
+t=linspace(0,7,338);
+c1=max(alpha)-min(alpha);
+c2=((7^3)/3)-((7^3/2));
+c3=c1/c2;
+alphadot=c3.*t.^2+(-7*c3).*t;
+
+%From the constraint equations
+%gama
+m=l3^2-l1^2-l2^2-l0^2+2*l0*l1.*cos(theta-alpha);
+a=2*l1*l2.*cos(alpha)-2*l2*l0.*cos(theta);
+b=2*l1*l2.*sin(alpha)-2*l2*l0.*sin(theta);
+ru=atan2(b./sqrt(a.^2+b.^2),a./sqrt(a.^2+b.^2));
+gama=ru-atan2(sqrt(1-(m.^2/(a.^2+b.^2))),(m./sqrt(a.^2+b.^2)));
+
+%delta
+n=l2^2-l1^2-l3^2-l0^2+2*l0*l1.*cos(alpha-theta);
+c=2*l0*l3.*cos(theta)-2*l3*l1.*cos(alpha);
+d=2*l0*l3.*sin(theta)-2*l3*l1.*sin(alpha);
+pu=atan2(d./sqrt(c.^2+d.^2),c./sqrt(c.^2+d.^2));
+delta=pu-atan2(-sqrt(1-(n.^2/(c.^2+d.^2))),(n./sqrt(c.^2+d.^2)));
+
+%phi
+phi=gama-acos(l4/l2);
+
+%Location
+Kx=l1.*cos(alpha)+l2.*cos(gama)+l6.*cos(pi+phi);
+Ky=l1.*sin(alpha)+l2.*sin(gama)+l6.*sin(pi+phi);
+Lx=l1.*cos(alpha)+l2.*cos(gama)+l7*cos(phi);
+Ly=l1.*sin(alpha)+l2.*sin(gama)+l7*sin(phi);
+%graph
+subplot(2,1,1);
+plot(Kx,Ky,'g',Lx,Ly,'r')
+grid on
+xlabel('x')
+ylabel('y')
+
+%velocity by jacovian
+gamadot=l1.*alphadot.*sin(alpha-delta)./(l2.*sin(gama-delta));
+phidot=gamadot;
+Kxdot=-l1.*alphadot.*sin(alpha)-l6.*phidot.*sin(pi+phi);
+Kydot=l1.*alphadot.*cos(alpha)+l6.*phidot.*cos(pi+phi);
+Lxdot=-l1.*alphadot.*sin(alpha)-l7.*phidot.*sin(phi);
+Lydot=l1.*alphadot.*cos(alpha)+l7.*phidot.*cos(phi);
+Vk=((Kxdot.^2)+(Kydot.^2)).^0.5;
+Vl=((Lxdot.^2)+(Lydot.^2)).^0.5;
+%graph
+subplot(2,1,2); 
+plot(t,Vk,'g',t,Vl,'r');
+grid on
+xlabel('t')
+ylabel('v')
+axis equal
+
+%torque
+l8=0.09;
+F1=392.4;
+beta=42*pi/180;
+Gxdot=-l1.*sin(alpha).*alphadot+(-l2.*sin(beta+phi)+l8.*sin(phi)).*phidot;
+Gydot=l1.*cos(alpha).*alphadot+(l2.*cos(beta+phi)-l8.*cos(phi)).*phidot;
+VG=((Gxdot.^2)+(Gydot.^2)).^0.5;
+Q=find(~alphadot);
+alphadot(Q)=0.001;
+T=(F1./alphadot).*Gydot;
+T1=max(abs(T));
